@@ -12,4 +12,8 @@ app.get('/', (req, res) => {
 const userRoutes = require('./routes/user');
 app.use('/users', userRoutes);
 
+//Rotas de corredores
+const corredoresRoutes = require('./routes/corredores');
+app.use('/corredores', corredoresRoutes);
+
 module.exports = app;
