@@ -32,6 +32,29 @@ corredoresRoutes.post('/', (req, res) => {
 });
 
 //rota para atualizar um corredor
+corredoresRoutes.put('/', (req, res) => {
+    const { nome, turma } = req.body;
+    const { idcorredores } = req.params;
+
+    if (!nome || !turma) {
+        return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+    }
+
+    const sql = 'UPDATE corredores SET nome = ?, turma = ? WHERE idcorredores = ?'
+    db.query(sql, [nome, turma], (err, results) => {
+        if (err) {
+            console.error('Erro ao atualizar o usuario', err)
+            return res.status(500).json({ error: err.message })
+        }
+        if (results.affectecRows === 0) {
+            return res.status(404).json({ error: 'Usuraio nao encontrado'})
+        }
+        res.json({message: 'Usuaro atualizado com sucesso'})
+    })
+})
+
+//rota pora apagar um usuario
+
 
 
 module.exports = corredoresRoutes;    
