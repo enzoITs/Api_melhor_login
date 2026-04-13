@@ -3,7 +3,7 @@ const userRoutes = express.Router();
 const db = require('../db');    
 
 // LISTAR TODOS OS USUÁRIOS
-userRoutes.get('/', (req, res) => {
+userRoutes.get('/users', (req, res) => {
     db.query('SELECT * FROM users', (err, results) => {
         if (err) {
             console.error('Erro ao buscar usuários: ', err);
@@ -14,7 +14,7 @@ userRoutes.get('/', (req, res) => {
 });
 
 // CRIAR USUÁRIO
-userRoutes.post('/usuarios', (req, res) => {
+userRoutes.post('/criar-user', (req, res) => {
     const { nome, email, senha } = req.body;
 
     if (!nome || !email || !senha) {
@@ -32,7 +32,7 @@ userRoutes.post('/usuarios', (req, res) => {
 });
 
 // ATUALIZAR USUÁRIO
-userRoutes.put('/usuario/:id', (req, res) => {
+userRoutes.put('/atualizar-user/:id', (req, res) => {
     const { nome, email, senha } = req.body;
     const { id } = req.params;
 
@@ -54,7 +54,7 @@ userRoutes.put('/usuario/:id', (req, res) => {
 });
 
 // DELETAR USUÁRIO
-userRoutes.delete('deletar-user/:id', (req, res) => {
+userRoutes.delete('/deletar-user/:id', (req, res) => {
     const { id } = req.params;
 
     const sql = 'DELETE FROM users WHERE idtable1 = ?';
