@@ -3,7 +3,7 @@ const corredoresRoutes = express.Router();
 const db = require('../db');    
 
 // ROTA GET PARA VER OS DADOS DE CORREDORES
-corredoresRoutes.get('/', (req, res) => {
+corredoresRoutes.get('/corredores', (req, res) => {
     db.query('SELECT *FROM corredores', (err, results) => {
         if (err) {
             console.error('Error ao buscar os dados: ', err);
@@ -14,7 +14,7 @@ corredoresRoutes.get('/', (req, res) => {
 });
 
 //rota para criar um novo corredor 
-corredoresRoutes.post('/', (req, res) => {
+corredoresRoutes.post('/add-corredor', (req, res) => {
     const { nome, turma} = req.body;
 
     if (!nome || !turma) {
@@ -32,7 +32,7 @@ corredoresRoutes.post('/', (req, res) => {
 });
 
 //rota para atualizar um corredor
-corredoresRoutes.put('/:id', (req, res) => {
+corredoresRoutes.put('/atualizar-corredor/:id', (req, res) => {
     const { idcorredores, nome, turma } = req.body;
     const { id } = req.params;
 
@@ -55,7 +55,7 @@ corredoresRoutes.put('/:id', (req, res) => {
 
 
 //rota para deletar um corredor
-corredoresRoutes.delete('/:id', (req, res) => {
+corredoresRoutes.delete('/deletar-corredor/:id', (req, res) => {
     const { id } = req.params;
     const sql = 'DELETE FROM corredores WHERE idcorredores = ?';
     db.query(sql, [id], (err, results) => {

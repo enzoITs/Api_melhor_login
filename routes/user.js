@@ -14,7 +14,7 @@ userRoutes.get('/', (req, res) => {
 });
 
 // CRIAR USUÁRIO
-userRoutes.post('/', (req, res) => {
+userRoutes.post('/usuarios', (req, res) => {
     const { nome, email, senha } = req.body;
 
     if (!nome || !email || !senha) {
@@ -32,7 +32,7 @@ userRoutes.post('/', (req, res) => {
 });
 
 // ATUALIZAR USUÁRIO
-userRoutes.put('/:id', (req, res) => {
+userRoutes.put('/usuario/:id', (req, res) => {
     const { nome, email, senha } = req.body;
     const { id } = req.params;
 
@@ -54,7 +54,7 @@ userRoutes.put('/:id', (req, res) => {
 });
 
 // DELETAR USUÁRIO
-userRoutes.delete('/:id', (req, res) => {
+userRoutes.delete('deletar-user/:id', (req, res) => {
     const { id } = req.params;
 
     const sql = 'DELETE FROM users WHERE idtable1 = ?';

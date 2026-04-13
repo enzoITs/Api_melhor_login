@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Router();
+const voltasRoutes = express.Router();
 const db = require('../db');
 
 
@@ -10,7 +10,7 @@ function isValidId(id) {
 
 
 // CONTAGEM POR CORREDOR
-router.get('/contagem/:id_corredor', async (req, res) => {
+voltasRoutes.get('/contagem/:id_corredor', async (req, res) => {
     const { id_corredor } = req.params;
 
     if (!isValidId(id_corredor)) {
@@ -69,7 +69,7 @@ router.get('/contagem', async (req, res) => {
 
 // MELHOR VOLTA GERAL
 
-router.get('/melhor-volta-geral', async (req, res) => {
+voltasRoutes.get('/melhor-volta', async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -111,7 +111,7 @@ router.get('/melhor-volta-geral', async (req, res) => {
 
 
 // MELHOR VOLTA POR CORREDOR
-router.get('/melhor/:id_corredor', async (req, res) => {
+voltasRoutes.get('/melhor/:id_corredor', async (req, res) => {
     const { id_corredor } = req.params;
 
     if (!isValidId(id_corredor)) {
@@ -160,7 +160,7 @@ router.get('/melhor/:id_corredor', async (req, res) => {
 
 
 // TOP 5 MELHORES VOLTAS
-router.get('/top5-melhores-voltas', async (req, res) => {
+voltasRoutes.get('/top5-voltas', async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -201,7 +201,7 @@ router.get('/top5-melhores-voltas', async (req, res) => {
 
 
 // RANKING GERAL
-router.get('/ranking', async (req, res) => {
+voltasRoutes.get('/ranking', async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -245,4 +245,4 @@ router.get('/ranking', async (req, res) => {
 });
 
 
-module.exports = router;
+module.exports = voltasRoutes;

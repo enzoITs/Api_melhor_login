@@ -16,4 +16,7 @@ app.use('/users', userRoutes);
 const corredoresRoutes = require('./routes/corredores');
 app.use('/corredores', corredoresRoutes);
 
+const voltasRoutes = require('./routes/voltas');
+app.use('/voltas', voltasRoutes);
+
 module.exports = app;
