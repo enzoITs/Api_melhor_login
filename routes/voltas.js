@@ -47,7 +47,7 @@ voltasRoutes.get('/contagem/:id_corredor', async (req, res) => {
 // =========================
 // CONTAGEM GERAL
 // =========================
-router.get('/contagem', async (req, res) => {
+voltasRoutes.get('/contagem', async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT COUNT(*) AS total_voltas FROM voltas

@@ -3,7 +3,7 @@ const corredoresRoutes = express.Router();
 const db = require('../db');    
 
 // ROTA GET PARA VER OS DADOS DE CORREDORES
-corredoresRoutes.get('/corredores', (req, res) => {
+corredoresRoutes.get('/', (req, res) => {
     db.query('SELECT *FROM corredores', (err, results) => {
         if (err) {
             console.error('Error ao buscar os dados: ', err);
@@ -14,7 +14,7 @@ corredoresRoutes.get('/corredores', (req, res) => {
 });
 
 //rota para criar um novo corredor 
-corredoresRoutes.post('/add-corredor', (req, res) => {
+corredoresRoutes.post('/', (req, res) => {
     const { nome, turma} = req.body;
 
     if (!nome || !turma) {
@@ -32,16 +32,16 @@ corredoresRoutes.post('/add-corredor', (req, res) => {
 });
 
 //rota para atualizar um corredor
-corredoresRoutes.put('/atualizar-corredor/:id', (req, res) => {
-    const { idcorredores, nome, turma } = req.body;
+corredoresRoutes.put('/:id', (req, res) => {
+    const { nome, turma } = req.body;
     const { id } = req.params;
 
-    if (!idcorredores || !nome || !turma) {
+    if (!nome || !turma) {
         return res.status(400).json({error: 'Todos os campos são obrigatórios' });
     }
 
-    const sql = 'UPDATE corredores SET idcorredores = ?, nome = ?, turma = ? WHERE idcorredores = ?'; 
-    db.query(sql, [idcorredores, nome, turma, id], (err, results) => {
+    const sql = 'UPDATE corredores SET nome = ?, turma = ? WHERE idcorredores = ?'; 
+    db.query(sql, [nome, turma, id], (err, results) => {
         if (err) {
             console.error('Erro ao atualizar corredor: ', err);
             return res.status(500).json({ error: err.message });
@@ -55,7 +55,7 @@ corredoresRoutes.put('/atualizar-corredor/:id', (req, res) => {
 
 
 //rota para deletar um corredor
-corredoresRoutes.delete('/deletar-corredor/:id', (req, res) => {
+corredoresRoutes.delete('/:id', (req, res) => {
     const { id } = req.params;
     const sql = 'DELETE FROM corredores WHERE idcorredores = ?';
     db.query(sql, [id], (err, results) => {
