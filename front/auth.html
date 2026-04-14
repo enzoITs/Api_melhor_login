@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F1 GRAND PRIX — ACESSO AO SISTEMA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #D4AF37;
+    --gold-light: #F2D06B;
+    --gold-dim: #8B6914;
+    --gold-glow: rgba(212, 175, 55, 0.3);
+    --black: #050505;
+    --dark: #0E0E0E;
+    --dark2: #161616;
+    --dark3: #1F1F1F;
+    --dark4: #2A2A2A;
+    --text: #E8E8E8;
+    --text-dim: #888;
+    --border: rgba(212, 175, 55, 0.2);
+    --border-bright: rgba(212, 175, 55, 0.6);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 400;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ── GRID NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(212,175,55,0.03) 39px, rgba(212,175,55,0.03) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(212,175,55,0.03) 39px, rgba(212,175,55,0.03) 40px);
+    pointer-events: none;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(5,5,5,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 28px;
+    color: var(--gold);
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px var(--gold-glow);
+  }
+  .nav-logo span { color: var(--text); }
+  .nav-links { display: flex; gap: 0; }
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0 18px;
+    height: 60px;
+    display: flex; align-items: center;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover, .nav-links a.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+  .nav-season {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--gold-dim);
+    letter-spacing: 2px;
+  }
+
+  /* ── HERO / AUTH ── */
+  #auth {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(212,175,55,0.06) 0%, transparent 70%);
+    padding: 80px 20px 40px;
+  }
+  .hero-track-lines {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(45deg, transparent 48%, rgba(212,175,55,0.04) 49%, rgba(212,175,55,0.04) 51%, transparent 52%),
+      linear-gradient(-45deg, transparent 48%, rgba(212,175,55,0.04) 49%, rgba(212,175,55,0.04) 51%, transparent 52%);
+    background-size: 60px 60px;
+  }
+  .auth-container {
+    position: relative; z-index: 2;
+    background: rgba(14,14,14,0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-bright);
+    border-radius: 12px;
+    padding: 60px 50px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+  }
+  .auth-title {
+    text-align: center; margin-bottom: 8px;
+    opacity: 0; animation: fadeUp 0.8s 0.2s ease forwards;
+  }
+  .auth-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; letter-spacing: 5px;
+    color: var(--gold); text-align: center; margin-bottom: 20px;
+    opacity: 0; animation: fadeUp 0.8s 0s ease forwards;
+  }
+  .auth-main-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: clamp(48px, 8vw, 80px);
+    line-height: 0.9;
+    color: var(--text);
+    letter-spacing: -1px;
+    text-align: center;
+  }
+  .auth-main-title .gold { color: var(--gold); text-shadow: 0 0 40px var(--gold-glow); }
+  .auth-sub {
+    text-align: center;
+    font-size: 14px; font-weight: 300; letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase; margin-bottom: 40px;
+    opacity: 0; animation: fadeUp 0.8s 0.4s ease forwards;
+  }
+
+  /* ── TABS ── */
+  .auth-tabs {
+    display: flex; background: var(--dark2);
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    margin-bottom: 32px; opacity: 0; animation: fadeUp 0.8s 0.6s ease forwards;
+  }
+  .tab-btn {
+    flex: 1; padding: 16px;
+    background: none; border: none;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 20px; font-weight: 600;
+    color: var(--text-dim); letter-spacing: 1px;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .tab-btn.active {
+    background: var(--gold); color: var(--black);
+    box-shadow: inset 0 2px 8px rgba(212,175,55,0.3);
+  }
+
+  /* ── FORMS ── */
+  .auth-form { display: none; opacity: 0; animation: fadeUp 0.5s ease forwards; }
+  .auth-form.active { display: block; }
+  .form-group {
+    margin-bottom: 24px; position: relative;
+    opacity: 0; animation: fadeUp 0.5s 0.2s ease forwards;
+  }
+  .form-group:nth-child(2) { animation-delay: 0.3s; }
+  .form-group:nth-child(3) { animation-delay: 0.4s; }
+  .form-group:nth-child(4) { animation-delay: 0.5s; }
+  .form-label {
+    display: block; font-size: 12px;
+    color: var(--text-dim); letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 8px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .form-input {
+    width: 100%; padding: 16px 20px;
+    background: var(--dark3); border: 1px solid var(--border);
+    border-radius: 6px; font-size: 16px;
+    color: var(--text); font-family: 'Rajdhani', sans-serif;
+    transition: all 0.3s;
+  }
+  .form-input:focus {
+    outline: none; border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--gold-glow);
+    background: var(--dark2);
+  }
+  .form-input::placeholder { color: var(--text-dim); opacity: 0.6; }
+
+  .auth-submit {
+    width: 100%; padding: 20px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    border: none; border-radius: 8px;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 22px; font-weight: 600;
+    color: var(--black); letter-spacing: 2px;
+    text-transform: uppercase; cursor: pointer;
+    transition: all 0.3s; margin-top: 8px;
+    box-shadow: 0 8px 24px rgba(212,175,55,0.4);
+  }
+  .auth-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(212,175,55,0.6);
+  }
+
+  /* ── LINK ── */
+  .auth-link {
+    text-align: center; margin-top: 24px;
+    opacity: 0; animation: fadeUp 0.8s 1s ease forwards;
+  }
+  .auth-link a {
+    color: var(--gold); text-decoration: none;
+    font-weight: 500; letter-spacing: 1px;
+  }
+  .auth-link a:hover { text-decoration: underline; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--dark2);
+    border-top: 1px solid var(--border);
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .footer-logo {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 36px; color: var(--gold);
+    letter-spacing: 6px; margin-bottom: 12px;
+  }
+  .footer-copy {
+    font-size: 13px; color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .auth-container { padding: 40px 30px; margin: 20px; }
+    .auth-main-title { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">F1<span>GP</span></div>
+  <div class="nav-links">
+    <a href="index.html" class="active">Dashboard</a>
+  </div>
+  <div class="nav-season">TEMPORADA 2025</div>
+</nav>
+
+<!-- AUTH HERO -->
+<section id="auth">
+  <div class="hero-track-lines"></div>
+  <div class="auth-container">
+    <div class="auth-title">
+      <div class="auth-eyebrow">● SISTEMA DE PONTOS</div>
+      <div class="auth-main-title">F1<span class="gold">GP</span></div>
+      <div class="auth-sub">Acesso Seguro aos Dados da Temporada</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">ENTRAR</button>
+      <button class="tab-btn" onclick="switchTab('register')">CADASTRAR</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form class="auth-form active" id="login-form">
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" class="form-input" placeholder="seu@email.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input type="password" class="form-input" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="auth-submit">ENTRAR NO SISTEMA</button>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form class="auth-form" id="register-form">
+      <div class="form-group">
+        <label class="form-label">Nome Completo</label>
+        <input type="text" class="form-input" placeholder="Nome do usuário" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" class="form-input" placeholder="seu@email.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input type="password" class="form-input" placeholder="••••••••" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmar Senha</label>
+        <input type="password" class="form-input" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="auth-submit">CRIAR MINHA CONTA</button>
+    </form>
+
+    <div class="auth-link">
+      Já tem conta? <a href="#" onclick="switchTab('login')">Entrar</a> | <a href="#" onclick="switchTab('register')">Novo aqui? Cadastre-se</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">F1GP</div>
+  <div class="footer-copy">Sistema de Pontuação Formula 1 · Temporada 2025 · Dados ilustrativos</div>
+</footer>
+
+<script>
+function switchTab(tabName) {
+  // Hide all forms
+  document.querySelectorAll('.auth-form').forEach(form => {
+    form.classList.remove('active');
+  });
+  
+  // Remove active from tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected form
+  document.getElementById(tabName + '-form').classList.add('active');
+  event.target.classList.add('active');
+  
+  // Update link text
+  const link = document.querySelector('.auth-link');
+  if (tabName === 'login') {
+    link.innerHTML = 'Já tem conta? <a href="#" onclick="switchTab(\'register\')">Cadastre-se</a>';
+  } else {
+    link.innerHTML = 'Já tem conta? <a href="#" onclick="switchTab(\'login\')">Entrar</a>';
+  }
+}
+
+// Form submissions (demo - no real backend)
+document.querySelectorAll('form').forEach(form => {
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    alert(form.id.includes('login') ? 'Login realizado com sucesso! Redirecionando...' : 'Conta criada com sucesso!');
+    // In production: submit to API
+  });
+});
+</script>
+
+</body>
+</html>
