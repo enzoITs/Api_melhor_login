@@ -1,6 +1,7 @@
 const express = require('express');
 const voltasRoutes = express.Router();
 const db = require('../db');
+const verificarToken = require('../middleware/auth');
 
 
 // 🔹 FUNÇÃO AUXILIAR
@@ -8,8 +9,53 @@ function isValidId(id) {
     return id && !isNaN(id);
 }
 
+// CADASTRAR NOVA VOLTA
+voltasRoutes.post('/', verificarToken, async (req, res) => {
+    const { corredores_id, tempo, data } = req.body;
+
+    if (!isValidId(corredores_id)) {
+        return res.status(400).json({ erro: 'corredores_id é obrigatório e deve ser numérico' });
+    }
+
+    if (!tempo) {
+        return res.status(400).json({ erro: 'O campo tempo é obrigatório' });
+    }
+
+    const dataVolta = data || new Date();
+
+    try {
+        const [rows] = await db.query(
+            'SELECT id FROM corredores WHERE id = ?',
+            [corredores_id]
+        );
+
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ erro: 'Corredor não encontrado.' });
+        }
+
+        const [result] = await db.query(
+            `INSERT INTO voltas (corredores_id, tempo, data) VALUES (?, ?, ?)`,
+            [corredores_id, tempo, dataVolta]
+        );
+
+        res.status(201).json({
+            mensagem: 'Volta registrada com sucesso!',
+            volta: {
+                id: result.insertId,
+                corredores_id: corredores_id,
+                tempo: tempo,
+                data: dataVolta
+            }
+        });
+
+    } catch (error) {
+        console.error('Erro ao cadastrar volta:', error.message);
+        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
+    }
+});
+
 // CONTAGEM POR CORREDOR
-voltasRoutes.get('/contagem/:id_corredor', async (req, res) => {
+voltasRoutes.get('/contagem/:id_corredor', verificarToken, async (req, res) => {
     const { id_corredor } = req.params;
 
     if (!isValidId(id_corredor)) {
@@ -46,11 +92,9 @@ voltasRoutes.get('/contagem/:id_corredor', async (req, res) => {
 // =========================
 // CONTAGEM GERAL
 // =========================
-voltasRoutes.get('/contagem', async (req, res) => {
+voltasRoutes.get('/contagem', verificarToken, async (req, res) => {
     try {
-        const [rows] = await db.query(`
-            SELECT COUNT(*) AS total_voltas FROM voltas
-        `);
+        const [rows] = await db.query(`SELECT COUNT(*) AS total_voltas FROM voltas`);
 
         if (!rows || rows.length === 0) {
             return res.json({ total_voltas: 0 });
@@ -68,7 +112,7 @@ voltasRoutes.get('/contagem', async (req, res) => {
 
 // MELHOR VOLTA GERAL
 
-voltasRoutes.get('/melhor-volta', async (req, res) => {
+voltasRoutes.get('/melhor-volta', verificarToken, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -110,7 +154,7 @@ voltasRoutes.get('/melhor-volta', async (req, res) => {
 
 
 // MELHOR VOLTA POR CORREDOR
-voltasRoutes.get('/melhor/:id_corredor', async (req, res) => {
+voltasRoutes.get('/melhor/:id_corredor', verificarToken, async (req, res) => {
     const { id_corredor } = req.params;
 
     if (!isValidId(id_corredor)) {
@@ -159,7 +203,7 @@ voltasRoutes.get('/melhor/:id_corredor', async (req, res) => {
 
 
 // TOP 5 MELHORES VOLTAS
-voltasRoutes.get('/top5-voltas', async (req, res) => {
+voltasRoutes.get('/top5-voltas', verificarToken, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -200,7 +244,7 @@ voltasRoutes.get('/top5-voltas', async (req, res) => {
 
 
 // RANKING GERAL
-voltasRoutes.get('/ranking', async (req, res) => {
+voltasRoutes.get('/ranking', verificarToken, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -245,3 +289,4 @@ voltasRoutes.get('/ranking', async (req, res) => {
 
 
 module.exports = voltasRoutes;
+
