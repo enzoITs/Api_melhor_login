@@ -8,7 +8,6 @@ function isValidId(id) {
     return id && !isNaN(id);
 }
 
-
 // CONTAGEM POR CORREDOR
 voltasRoutes.get('/contagem/:id_corredor', async (req, res) => {
     const { id_corredor } = req.params;
