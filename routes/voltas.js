@@ -3,290 +3,242 @@ const voltasRoutes = express.Router();
 const db = require('../db');
 const verificarToken = require('../middleware/auth');
 
-
-// 🔹 FUNÇÃO AUXILIAR
 function isValidId(id) {
-    return id && !isNaN(id);
+  return id !== undefined && id !== null && !isNaN(Number(id));
 }
 
 // CADASTRAR NOVA VOLTA
 voltasRoutes.post('/', verificarToken, async (req, res) => {
+  try {
     const { corredores_id, tempo, data } = req.body;
 
     if (!isValidId(corredores_id)) {
-        return res.status(400).json({ erro: 'corredores_id é obrigatório e deve ser numérico' });
+      return res.status(400).json({ error: 'corredores_id é obrigatório e deve ser numérico' });
     }
 
-    if (!tempo) {
-        return res.status(400).json({ erro: 'O campo tempo é obrigatório' });
+    if (tempo === undefined || tempo === null || tempo === '') {
+      return res.status(400).json({ error: 'O campo tempo é obrigatório' });
     }
 
-    const dataVolta = data || new Date();
+    const tempoNum = Number(tempo);
+    if (isNaN(tempoNum)) return res.status(400).json({ error: 'tempo deve ser numérico' });
 
-    try {
-        const [rows] = await db.query(
-            'SELECT id FROM corredores WHERE id = ?',
-            [corredores_id]
-        );
+    const dataVolta = data ? new Date(data) : new Date();
+    if (isNaN(dataVolta.getTime())) return res.status(400).json({ error: 'data inválida' });
 
-        if (!rows || rows.length === 0) {
-            return res.status(404).json({ erro: 'Corredor não encontrado.' });
-        }
-
-        const [result] = await db.query(
-            `INSERT INTO voltas (corredores_id, tempo, data) VALUES (?, ?, ?)`,
-            [corredores_id, tempo, dataVolta]
-        );
-
-        res.status(201).json({
-            mensagem: 'Volta registrada com sucesso!',
-            volta: {
-                id: result.insertId,
-                corredores_id: corredores_id,
-                tempo: tempo,
-                data: dataVolta
-            }
-        });
-
-    } catch (error) {
-        console.error('Erro ao cadastrar volta:', error.message);
-        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
+    const [rows] = await db.query('SELECT id FROM corredores WHERE id = ?', [corredores_id]);
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: 'Corredor não encontrado.' });
     }
+
+    const [result] = await db.query('INSERT INTO voltas (corredores_id, tempo, data) VALUES (?, ?, ?)', [corredores_id, tempoNum, dataVolta]);
+
+    return res.status(201).json({
+      message: 'Volta registrada com sucesso!',
+      volta: {
+        id: result.insertId,
+        corredores_id: Number(corredores_id),
+        tempo: tempoNum,
+        data: dataVolta
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao cadastrar volta:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // CONTAGEM POR CORREDOR
 voltasRoutes.get('/contagem/:id_corredor', verificarToken, async (req, res) => {
-    const { id_corredor } = req.params;
+  const { id_corredor } = req.params;
+  if (!isValidId(id_corredor)) return res.status(400).json({ error: 'id_corredor deve ser numérico' });
 
-    if (!isValidId(id_corredor)) {
-        return res.status(400).json({ erro: 'id_corredor deve ser numérico' });
-    }
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        c.id AS id_corredor,
+        c.nome,
+        c.turma,
+        c.equipe,
+        COUNT(v.id) AS total_voltas
+      FROM corredores c
+      LEFT JOIN voltas v ON v.corredores_id = c.id
+      WHERE c.id = ?
+      GROUP BY c.id, c.nome, c.turma, c.equipe
+    `, [id_corredor]);
 
-    try {
-        const [rows] = await db.query(`
-            SELECT 
-                c.id AS id_corredor,
-                c.nome,
-                c.turma,
-                c.equipe,
-                COUNT(v.id) AS total_voltas
-            FROM corredores c
-            LEFT JOIN voltas v ON v.corredores_id = c.id
-            WHERE c.id = ?
-            GROUP BY c.id, c.nome, c.turma, c.equipe
-        `, [id_corredor]);
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Corredor não encontrado' });
 
-        if (!rows || rows.length === 0) {
-            return res.status(404).json({ erro: 'Corredor não encontrado' });
-        }
-
-        res.json(rows[0]);
-
-    } catch (error) {
-        console.error('Erro ao contar voltas:', error.message);
-        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
-    }
+    return res.json(rows[0]);
+  } catch (error) {
+    console.error('Erro ao contar voltas:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-
-// =========================
 // CONTAGEM GERAL
-// =========================
 voltasRoutes.get('/contagem', verificarToken, async (req, res) => {
-    try {
-        const [rows] = await db.query(`SELECT COUNT(*) AS total_voltas FROM voltas`);
-
-        if (!rows || rows.length === 0) {
-            return res.json({ total_voltas: 0 });
-        }
-
-        res.json({ total_voltas: rows[0].total_voltas });
-
-    } catch (error) {
-        console.error('Erro ao contar voltas:', error.message);
-        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
-    }
+  try {
+    const [rows] = await db.query('SELECT COUNT(*) AS total_voltas FROM voltas');
+    const total = (rows && rows[0] && rows[0].total_voltas) ? rows[0].total_voltas : 0;
+    return res.json({ total_voltas: total });
+  } catch (error) {
+    console.error('Erro ao contar voltas:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
-
-
 
 // MELHOR VOLTA GERAL
-
 voltasRoutes.get('/melhor-volta', verificarToken, async (req, res) => {
-    try {
-        const [rows] = await db.query(`
-            SELECT 
-                v.tempo, 
-                v.data, 
-                c.id AS id_corredor, 
-                c.nome, 
-                c.turma,
-                c.equipe
-            FROM voltas v
-            JOIN corredores c ON v.corredores_id = c.id
-            ORDER BY v.tempo ASC
-            LIMIT 1
-        `);
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        v.tempo, 
+        v.data, 
+        c.id AS id_corredor, 
+        c.nome, 
+        c.turma,
+        c.equipe
+      FROM voltas v
+      JOIN corredores c ON v.corredores_id = c.id
+      ORDER BY v.tempo ASC
+      LIMIT 1
+    `);
 
-        if (!rows || rows.length === 0) {
-            return res.status(404).json({ erro: 'Nenhuma volta registrada' });
-        }
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Nenhuma volta registrada' });
 
-        const r = rows[0];
-
-        res.json({
-            melhor_volta: r.tempo,
-            data: r.data,
-            corredor: {
-                id: r.id_corredor,
-                nome: r.nome,
-                turma: r.turma,
-                equipe: r.equipe
-            }
-        });
-
-    } catch (error) {
-        console.error('Erro melhor volta geral:', error.message);
-        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
-    }
+    const r = rows[0];
+    return res.json({
+      melhor_volta: r.tempo,
+      data: r.data,
+      corredor: {
+        id: r.id_corredor,
+        nome: r.nome,
+        turma: r.turma,
+        equipe: r.equipe
+      }
+    });
+  } catch (error) {
+    console.error('Erro melhor volta geral:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
-
-
 
 // MELHOR VOLTA POR CORREDOR
 voltasRoutes.get('/melhor/:id_corredor', verificarToken, async (req, res) => {
-    const { id_corredor } = req.params;
+  const { id_corredor } = req.params;
+  if (!isValidId(id_corredor)) return res.status(400).json({ error: 'id_corredor deve ser numérico' });
 
-    if (!isValidId(id_corredor)) {
-        return res.status(400).json({ erro: 'id_corredor deve ser numérico' });
-    }
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        v.tempo, 
+        v.data, 
+        c.id AS id_corredor, 
+        c.nome, 
+        c.turma,
+        c.equipe
+      FROM voltas v
+      JOIN corredores c ON v.corredores_id = c.id
+      WHERE c.id = ?
+      ORDER BY v.tempo ASC
+      LIMIT 1
+    `, [id_corredor]);
 
-    try {
-        const [rows] = await db.query(`
-            SELECT 
-                v.tempo, 
-                v.data, 
-                c.id AS id_corredor, 
-                c.nome, 
-                c.turma,
-                c.equipe
-            FROM voltas v
-            JOIN corredores c ON v.corredores_id = c.id
-            WHERE c.id = ?
-            ORDER BY v.tempo ASC
-            LIMIT 1
-        `, [id_corredor]);
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Nenhuma volta encontrada para este corredor' });
 
-        if (!rows || rows.length === 0) {
-            return res.status(404).json({ erro: 'Nenhuma volta encontrada para este corredor' });
-        }
-
-        const r = rows[0];
-
-        res.json({
-            id_corredor,
-            melhor_volta: r.tempo,
-            data: r.data,
-            corredor: {
-                nome: r.nome,
-                turma: r.turma,
-                equipe: r.equipe
-            }
-        });
-
-    } catch (error) {
-        console.error('Erro melhor volta corredor:', error.message);
-        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
-    }
+    const r = rows[0];
+    return res.json({
+      id_corredor: Number(id_corredor),
+      melhor_volta: r.tempo,
+      data: r.data,
+      corredor: {
+        nome: r.nome,
+        turma: r.turma,
+        equipe: r.equipe
+      }
+    });
+  } catch (error) {
+    console.error('Erro melhor volta corredor:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
-
-
 
 // TOP 5 MELHORES VOLTAS
 voltasRoutes.get('/top5-voltas', verificarToken, async (req, res) => {
-    try {
-        const [rows] = await db.query(`
-            SELECT 
-                c.id AS id_corredor,
-                c.nome,
-                c.turma,
-                c.equipe,
-                v.tempo,
-                v.data
-            FROM voltas v
-            JOIN corredores c ON v.corredores_id = c.id
-            ORDER BY v.tempo ASC
-            LIMIT 5
-        `);
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        c.id AS id_corredor,
+        c.nome,
+        c.turma,
+        c.equipe,
+        v.tempo,
+        v.data
+      FROM voltas v
+      JOIN corredores c ON v.corredores_id = c.id
+      ORDER BY v.tempo ASC
+      LIMIT 5
+    `);
 
-        if (!rows || rows.length === 0) {
-            return res.status(404).json({ erro: 'Nenhuma volta registrada' });
-        }
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Nenhuma volta registrada' });
 
-        const ranking = rows.map((row, index) => ({
-            rank: index + 1,
-            id_corredor: row.id_corredor,
-            nome: row.nome,
-            turma: row.turma,
-            equipe: row.equipe,
-            tempo: row.tempo,
-            data: row.data
-        }));
+    const ranking = rows.map((row, index) => ({
+      rank: index + 1,
+      id_corredor: row.id_corredor,
+      nome: row.nome,
+      turma: row.turma,
+      equipe: row.equipe,
+      tempo: row.tempo,
+      data: row.data
+    }));
 
-        res.json({ ranking });
-
-    } catch (error) {
-        console.error('Erro top 5:', error.message);
-        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
-    }
+    return res.json({ ranking });
+  } catch (error) {
+    console.error('Erro top 5:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
-
-
 
 // RANKING GERAL
 voltasRoutes.get('/ranking', verificarToken, async (req, res) => {
-    try {
-        const [rows] = await db.query(`
-            SELECT 
-                c.id AS id_corredor,
-                c.nome,
-                c.turma,
-                c.equipe,
-                v.tempo AS melhor_volta,
-                v.data AS data_volta
-            FROM corredores c
-            JOIN voltas v ON v.id = (
-                SELECT id 
-                FROM voltas 
-                WHERE corredores_id = c.id 
-                ORDER BY tempo ASC 
-                LIMIT 1
-            )
-            ORDER BY v.tempo ASC
-        `);
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        c.id AS id_corredor,
+        c.nome,
+        c.turma,
+        c.equipe,
+        v.tempo AS melhor_volta,
+        v.data AS data_volta
+      FROM corredores c
+      JOIN voltas v ON v.id = (
+        SELECT id 
+        FROM voltas 
+        WHERE corredores_id = c.id 
+        ORDER BY tempo ASC 
+        LIMIT 1
+      )
+      ORDER BY v.tempo ASC
+    `);
 
-        if (!rows || rows.length === 0) {
-            return res.status(404).json({ erro: 'Nenhuma volta registrada' });
-        }
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Nenhuma volta registrada' });
 
-        const ranking = rows.map((row, index) => ({
-            rank: index + 1,
-            id_corredor: row.id_corredor,
-            nome: row.nome,
-            turma: row.turma,
-            equipe: row.equipe,
-            melhor_volta: row.melhor_volta,
-            data_volta: row.data_volta
-        }));
+    const ranking = rows.map((row, index) => ({
+      rank: index + 1,
+      id_corredor: row.id_corredor,
+      nome: row.nome,
+      turma: row.turma,
+      equipe: row.equipe,
+      melhor_volta: row.melhor_volta,
+      data_volta: row.data_volta
+    }));
 
-        res.json({ ranking });
-
-    } catch (error) {
-        console.error('Erro ranking:', error.message);
-        res.status(500).json({ erro: 'Erro interno', detalhe: error.message });
-    }
+    return res.json({ ranking });
+  } catch (error) {
+    console.error('Erro ranking:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-
 module.exports = voltasRoutes;
-

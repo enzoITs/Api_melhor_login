@@ -3,18 +3,18 @@ const userRoutes = express.Router();
 const db = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'change_this_in_production';
+const SALT_ROUNDS = 10;
 
-// Rota para listar todos os usuários
+// Rota para listar todos os usuários (sem senhas)
 userRoutes.get('/', async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM users');
+        const [results] = await db.query('SELECT id_users, nome, email FROM users');
         res.json(results);
     } catch (err) {
         console.error('Erro ao buscar usuários: ', err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -24,8 +24,18 @@ userRoutes.post('/', async (req, res) => {
     if (!nome || !email || !senha) {
         return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
     }
-    const senhaHash = bcrypt.hashSync(senha, 10);
+    // email simple validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: 'Email inválido' });
+
     try {
+        // check existing email
+        const [existing] = await db.query('SELECT id_users FROM users WHERE email = ?', [email]);
+        if (existing && existing.length > 0) {
+            return res.status(409).json({ error: 'Email já cadastrado' });
+        }
+
+        const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
         const [results] = await db.query(
             'INSERT INTO users (nome, email, senha) VALUES (?, ?, ?)',
             [nome, email, senhaHash]
@@ -33,7 +43,7 @@ userRoutes.post('/', async (req, res) => {
         res.status(201).json({ message: 'Usuário criado com sucesso', id: results.insertId });
     } catch (err) {
         console.error('Erro ao criar usuário: ', err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -75,7 +85,7 @@ userRoutes.post('/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Erro geral no login: ', error);
-        return res.status(500).json({ error: 'Erro inesperado' });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -87,9 +97,9 @@ userRoutes.put('/:id', async (req, res) => {
     if (!nome || !email || !senha) {
         return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
     }
-    const senhaHash = bcrypt.hashSync(senha, 10);
 
     try {
+        const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
         const [results] = await db.query(
             'UPDATE users SET nome = ?, email = ?, senha = ? WHERE id_users = ?',
             [nome, email, senhaHash, id]
@@ -100,7 +110,7 @@ userRoutes.put('/:id', async (req, res) => {
         res.json({ message: 'Usuário atualizado com sucesso' });
     } catch (err) {
         console.error('Erro ao atualizar usuário: ', err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -115,7 +125,7 @@ userRoutes.delete('/:id', async (req, res) => {
         res.json({ message: 'Usuário excluído com sucesso' });
     } catch (err) {
         console.error('Erro ao excluir usuário: ', err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
