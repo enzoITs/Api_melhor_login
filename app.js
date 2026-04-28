@@ -4,10 +4,20 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const fs = require('fs');
 
-// Security and logging
-app.use(helmet());
-app.use(morgan('combined'));
+console.log('=== INICIANDO APP.JS ===');
+console.log('__dirname:', __dirname);
+
+// Security and logging  
+// app.use(helmet());  // Temporariamente desabilitado para debug
+// app.use(morgan('combined'));  // Removido temporariamente para debug
+
+// Middleware de debug - primeiro middleware para log de TODAS as requisições
+app.use((req, res, next) => {
+    process.stdout.write(`>>> REQUISIÇÃO: ${req.method} ${req.url}\n`);
+    next();
+});
 
 // Allow cross-origin requests (so the frontend can be opened from file:// or other origins)
 app.use(cors());
@@ -16,11 +26,30 @@ app.use(express.json());
 
 // Serve frontend static files so the front-end can call the API
 // Access pages at: http://localhost:<PORT>/cadastro_login.html and /dashboard.html
-app.use(express.static(path.join(__dirname, 'Front_api')));
+const frontendPath = path.resolve(__dirname, '../Front_api');
+console.log('Servindo arquivos estáticos de:', frontendPath);
+
+// Middleware para servir arquivos HTML
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    // Se a requisição é para um arquivo no diretório Front_api
+    if (req.path.endsWith('.html') || req.path === '/') {
+        const filePath = path.resolve(frontendPath, req.path === '/' ? 'index.html' : req.path.substring(1));
+        console.log(`Procurando arquivo: ${filePath}`);
+        if (fs.existsSync(filePath)) {
+            console.log(`Arquivo encontrado! Servindo: ${filePath}`);
+            return res.sendFile(filePath);
+        }
+    }
+    next();
+});
+
+// Fallback para static files
+app.use(express.static(frontendPath));
 
 // Rota de teste
 app.get('/', (req, res) => {
-    res.send('API funcionando');
+    res.redirect('/cadastro_login.html');
 });
 
 // Rotas de usuário
@@ -33,6 +62,9 @@ app.use('/corredores', corredoresRoutes);
 
 const voltasRoutes = require('./routes/voltas');
 app.use('/voltas', voltasRoutes);
+
+const publicRoutes = require('./routes/cliente');
+app.use('/api/cliente', clienteRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
