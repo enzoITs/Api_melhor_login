@@ -284,4 +284,4 @@ publicRoutes.get('/corredores/:id', async (req, res) => {
   }
 });
 
-module.exports = clienteRoutes;
+module.exports = publicRoutes;

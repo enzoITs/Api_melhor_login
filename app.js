@@ -63,8 +63,8 @@ app.use('/corredores', corredoresRoutes);
 const voltasRoutes = require('./routes/voltas');
 app.use('/voltas', voltasRoutes);
 
-const publicRoutes = require('./routes/cliente');
-app.use('/api/cliente', clienteRoutes);
+const clientRoutes = require('./routes/client');
+app.use('/api/cliente', clientRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
